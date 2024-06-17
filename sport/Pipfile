@@ -13,6 +13,7 @@ psycopg = "*"
 pillow = "*"
 celery = "*"
 redis = "*"
+python-dotenv = "*"
 
 [dev-packages]
 

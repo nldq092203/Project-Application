@@ -11,25 +11,25 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-m#qshxr#-!__w=749ul-0be$9ju%pg9e#r$3u)kli$y+9yn7yu'
+DEFAULT_SECRET_KEY = 'django-insecure-m#qshxr#-!__w=749ul-0be$9ju%pg9e#r$3u)kli$y+9yn7yu'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = []
-
-# SECRET_KEY = os.environ.get('SECRET_KEY')
-# DEBUG = os.environ.get('DEBUG')
-# ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS').split(',')
+SECRET_KEY = os.getenv('SECRET_KEY', 'DEFAULT_SECRET_KEY')
+DEBUG = os.getenv('DEBUG', 'True')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 # Application definition
 
 INSTALLED_APPS = [
@@ -82,12 +82,12 @@ WSGI_APPLICATION = 'sport.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.mysql', # engine support GIS
-        'NAME': 'Sport',
-        'HOST': 'localhost',
-        'USER': 'sportmanager',
-        'PASSWORD': 'sportmanager123',
-        'PORT': '3306',
+        'ENGINE': 'django.contrib.gis.db.backends.mysql',
+        'NAME': os.getenv('DB_NAME', 'Sport'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'USER': os.getenv('DB_USER', 'sportmanager'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'sportmanager123'),
+        'PORT': os.getenv('DB_PORT', '3306'),
     }
 }
 
