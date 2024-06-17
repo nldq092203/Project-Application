@@ -1,4 +1,5 @@
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.models import Group
 from djoser.views import UserViewSet, TokenCreateView, TokenDestroyView
 from rest_framework.response import Response
 from rest_framework import status, generics
@@ -14,10 +15,28 @@ from .serializers import ParticipantSerializer, GroupRunnerSerializer, EventSeri
 # Register
 class CustomParticipantCreateView(UserViewSet): 
     def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        custom_data = {"message": "Participant created successfully", "data": response.data}
-        return Response(custom_data, status=status.HTTP_201_CREATED)
+        role = request.data.get('role', 'Runner')
+        code_secret = request.data.get('secret_code')
+        if not code_secret and role == 'Coach':
+            return Response({"message": "Secret code is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        COACH_SECRET_CODE = settings.COACH_SECRET_CODE
 
+        if role == 'Coach' and code_secret != COACH_SECRET_CODE:
+            return Response({"message": "Invalid secret code."}, status=status.HTTP_400_BAD_REQUEST)
+        response = super().create(request, *args, **kwargs)
+        if response.status_code == status.HTTP_201_CREATED:
+            user = Participant.objects.get(username=response.data['username'])
+            if role == 'Coach':
+                group = Group.objects.get(name='Coach')
+                user.groups.add(group)
+            elif role == 'Runner':
+                group = Group.objects.get(name='Runner')
+                user.groups.add(group)
+            custom_data = {"message": "Participant created successfully", "data": response.data, "role": role}  
+            return Response(custom_data, status=status.HTTP_201_CREATED)
+        return response
+    
 # Login
 class CustomTokenCreateView(TokenCreateView):
     def _action(self, serializer):
@@ -68,48 +87,52 @@ class SetPassword(UserViewSet):
 
 
 class IsCoach(BasePermission):
-    def has_object_permission(self,request, view, obj):
-        return obj.coach == request.user
+    def has_permission(self,request, view):
+        if request.user:
+            return request.user.groups.filter(name="Coach")
+        return False
 
 class IsRunner(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        return request.user in obj.group_runner.members.all()
+    def has_permission(self,request, view):
+        if request.user:
+            return request.user.groups.filter(name="Runner")
+        return False
     
 ############################App Logics############################
 
-class EventManageView(generics.ListCreateAPIView):
-    serializer_class = EventSerializer
+# class EventCoachView(generics.ListCreateAPIView):
+#     serializer_class = EventSerializer
 
-    def get_permissions(self):
-        return [IsCoach()]
+#     def get_permissions(self):
+#         return [IsCoach()]
     
-    def get_queryset(self):
-        user = self.request.user
-        my_manage_events = Event.objects.filter(coach=user).order_by('-start')
-        return my_manage_events
+#     def get_queryset(self):
+#         user = self.request.user
+#         my_manage_events = Event.objects.filter(coach=user).order_by('-start')
+#         return my_manage_events
     
-    def create(self, request, *args, **kwargs):
-        data = request.data.copy()
-        data['coach'] = self.request.user.id
-        event_serializer = EventSerializer(data=data)
+#     def create(self, request, *args, **kwargs):
+#         data = request.data.copy()
+#         data['coach'] = self.request.user.id
+#         event_serializer = EventSerializer(data=data)
 
-        if event_serializer.is_valid():
-            event_serializer.save()
-            return Response(event_serializer.data, status=status.HTTP_201_CREATED)
-        return Response(event_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#         if event_serializer.is_valid():
+#             event_serializer.save()
+#             return Response(event_serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(event_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class EventParticipateView(generics.ListAPIView):
-    serializer_class = EventSerializer
-    search_fields = ['group_runner__name', 'is_finished']
-    ordering_fields = ['-start', 'start', 'end', '-end']
-    def get_permissions(self):
-        return [IsRunner()]
+# class EventParticipateView(generics.ListAPIView):
+#     serializer_class = EventSerializer
+#     search_fields = ['group_runner__name', 'is_finished']
+#     ordering_fields = ['-start', 'start', 'end', '-end']
+#     def get_permissions(self):
+#         return [IsRunner()]
     
-    def get_queryset(self):
-        runner = self.request.user
-        group_runners = GroupRunner.objects.filter(members=runner)
-        my_participate_events = Event.objects.filter(group_runner__in=group_runners).order_by('-start')
-        return my_participate_events
+#     def get_queryset(self):
+#         runner = self.request.user
+#         group_runners = GroupRunner.objects.filter(members=runner)
+#         my_participate_events = Event.objects.filter(group_runner__in=group_runners).order_by('-start')
+#         return my_participate_events
 
- 
+
     

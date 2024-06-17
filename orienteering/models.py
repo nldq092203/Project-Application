@@ -4,10 +4,15 @@ from django.contrib.auth.models import AbstractUser, Group, Permission
 
 
 class Participant(AbstractUser):
+    ROLE_CHOICES = [
+        ('Coach', 'Coach'),
+        ('Runner', 'Runner'),
+    ]
     organization = models.CharField(max_length=100)
     image = models.ImageField(upload_to='profile_images', blank=True, null=True)
-    groups = models.ManyToManyField(Group, related_name='custom_user_groups')
-    user_permissions = models.ManyToManyField(Permission, related_name='custom_user_permissions')
+    group = models.ForeignKey(Group, related_name='custom_user_group', on_delete=models.CASCADE, null=True)
+    user_permission = models.ForeignKey(Permission, related_name='custom_user_permission', on_delete=models.CASCADE, null=True)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     
 class GroupRunner(models.Model):
     name = models.CharField(max_length=50)

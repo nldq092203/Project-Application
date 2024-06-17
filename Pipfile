@@ -11,6 +11,8 @@ djoser = "*"
 mysqlclient = "*"
 psycopg = "*"
 pillow = "*"
+celery = "*"
+redis = "*"
 
 [dev-packages]
 

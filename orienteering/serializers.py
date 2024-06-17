@@ -6,11 +6,12 @@ from rest_framework.validators import UniqueTogetherValidator
 class ParticipantSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Participant
-        fields = ['id', 'username', 'first_name', 'last_name', 'organization', 'image']
+        fields = ['id', 'username', 'first_name', 'last_name', 'organization', 'image', 'role']
 
 class GroupRunnerSerializer(serializers.ModelSerializer):
     members = serializers.HyperlinkedRelatedField(
         many=True,
+        queryset=models.Participant.objects.all(),
         view_name='participant-detail',
     )
     class Meta:

@@ -27,7 +27,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
+# SECRET_KEY = os.environ.get('SECRET_KEY')
+# DEBUG = os.environ.get('DEBUG')
+# ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS').split(',')
 # Application definition
 
 INSTALLED_APPS = [
@@ -152,7 +154,9 @@ DJOSER ={
     'EMAIL': {
         'password_reset': 'djoser.email.PasswordResetEmail',
         'password_changed_confirmation': 'djoser.email.PasswordChangedConfirmationEmail',
-    }
+    },
+    'COACH_SECRET_CODE': 'iamcoach'
 }
 
 GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal309'
+DJANGO_COACH_SECRET_CODE = 'iamcoach'
