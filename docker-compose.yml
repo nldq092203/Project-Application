@@ -1,0 +1,18 @@
+version: '3.8'
+
+service:
+
+  django:
+    container_name: django
+    build:
+      context: ./sport
+      dockerfile: Dockerfile
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./sport:/usr/src/app
+    ports:
+      - 8000:8000
+    evironment:
+      - DEBUG=1
+      - SECRET_KEY=django-insecure-m#qshxr#-!__w=749ul-0be$9ju%pg9e#r$3u)kli$y+9yn7yu
+      - ALLOWED_HOSTS=localhost, 127.0.0.1
