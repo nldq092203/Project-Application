@@ -111,5 +111,5 @@ class EventParticipateView(generics.ListAPIView):
         my_participate_events = Event.objects.filter(group_runner__in=group_runners).order_by('-start')
         return my_participate_events
 
-class 
+ 
     
