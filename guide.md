@@ -49,11 +49,11 @@ CREATE_SESSION_ON_LOGIN
 #### Location 
 - {{baseURL}}/api/locations/
     + GET-list: List all the locations in database
-    + POST: Create a new location - body['name', 'start_point']
+    + POST: Create a new location - body['name', 'longitude', 'latitude']
     start_point: POINT (-30.5 10)
 - {{baseURL}}/api/locations/<int:pk>/
     + GET-retrieve: Retrieve the detail information of specific location
-    + PUT or PATCH: Modify a specific location (name, start_point)
+    + PUT or PATCH: Modify a specific location (name, 'longitude', 'latitude')
     + DELETE: Delete a specific location
 
 #### GroupRunner
@@ -113,7 +113,7 @@ CREATE_SESSION_ON_LOGIN
 #### CheckPoint
 
 - Create a checkpoint - POST - {{baseURL}}/api/checkpoints/ 
--> body: number + location + race_id + score
+-> body: number + longitude + latitude + race_id + score
 
 
 ### App Logics for Runner
@@ -151,7 +151,7 @@ CREATE_SESSION_ON_LOGIN
 
 #### CheckpointRecord
 - Record a CheckPoint - POST - {{baseURL}}/api/record-checkpoint/
--> body: number + location + race_runner_id
+-> body: number + longitude + latitude + race_runner_id
 -> All the logic to count score and save the correct checkpointrecord have been done
 
 #### End RaceRunner
