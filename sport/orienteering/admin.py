@@ -52,6 +52,9 @@ class RaceTypeAdmin(admin.ModelAdmin):
     list_display = ['name']
     search_fields = ['name']
 
+class CheckPointRecord(admin.ModelAdmin):
+    list_display = ['number', 'location']
+
 admin.site.register(models.Participant, ParticipantAdmin)
 admin.site.register(models.GroupRunner, GroupRunnerAdmin)
 admin.site.register(models.Event, EventAdmin)
@@ -60,3 +63,4 @@ admin.site.register(models.CheckPoint, CheckPointAdmin)
 admin.site.register(models.RaceRunner, RaceRunnerAdmin)
 admin.site.register(models.RaceType, RaceTypeAdmin)
 admin.site.register(models.Location, LocationAdmin)
+admin.site.register(models.CheckPointRecord, CheckPointRecord)

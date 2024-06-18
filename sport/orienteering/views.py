@@ -14,8 +14,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from . import filters
 from datetime import timedelta
 from django.utils import timezone
+import datetime
+from django.utils.duration import duration_string
 import logging
-
+from math import sqrt
 logger = logging.getLogger(__name__)
 
 
@@ -381,6 +383,9 @@ class RaceDetailRunnerView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class StartRaceView(APIView):
+    def get_serializer_context(self):
+        return {'request': self.request}
+    
     def post(self, request, *args, **kwargs):
         race_id = request.data.get('race_id')
         if not race_id:
@@ -394,7 +399,7 @@ class StartRaceView(APIView):
         if request.user not in group_event:
             return Response({'message': 'You have not joined this event'}, status=status.HTTP_400_BAD_REQUEST)
         race_runner = RaceRunner.objects.create(race=race, runner=request.user)
-        serializer = RaceRunnerSerializer(race_runner)
+        serializer = RaceRunnerSerializer(race_runner, context=self.get_serializer_context())
 
         return Response({'message': 'Start run', 'data': serializer.data}, status=status.HTTP_201_CREATED)
     
@@ -412,63 +417,155 @@ class RecordCheckPointView(APIView):
         serializer = CheckPointRecordSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
+            checkpoint_record = serializer.instance
+            score = self.verify_checkpoint_record(checkpoint_record)
+            checkpoint_record.race_runner.score += score
+            checkpoint_record.delete()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class EndRaceRunnerView(APIView):
-
-    NegativePointPerSecond = 0.1
-
-    def get_permissions(self):
-        return [IsOwnerRaceRunner()]
-    
-    def patch(self, request, *args, **kwargs):
-        race_runner_id = request.data.get('race_runner_id')
-        try:
-            race_runner = RaceRunner.objects.get(id=race_runner_id)
-        except RaceRunner.DoesNotExist:
-            return Response({'message: Not found'}, status=status.HTTP_404_NOT_FOUND)
-        # if race_runner.is_finished:
-        #     return Response({'message': 'You have terminated your race'}, status=status.HTTP_400_BAD_REQUEST)
-        total_time = request.data.get('total_time')
-        if total_time is not None:
-            # Convert the total_time string to a timedelta object
-            hours, minutes, seconds = map(int, total_time.split(':'))
-            total_time = timedelta(hours=hours, minutes=minutes, seconds=seconds)
-            race_runner.total_time = total_time
-            race_runner.score = 0
-            for checkpoint_record in race_runner.checkpoint_records.all():
-                score = self.verify_checkpoint_record(checkpoint_record)
-                if checkpoint_record.is_correct:
-                    race_runner.score += score
-                    # Delete the checkpoint record
-                    checkpoint_record.delete()
-            negative_point = self.verify_total_time(total_time, race_runner)
-            # return Response({'score': race_runner.score, 'negative_point': negative_point}, status=status.HTTP_200_OK)
-            race_runner.score = max(0, race_runner.score - negative_point)
-            race_runner.is_finished = True
-
-        race_runner.save()
-        serializer = RaceRunnerSerializer(race_runner)
-        return Response(serializer.data, status=status.HTTP_200_OK)       
     
     def verify_checkpoint_record(self, checkpoint_record):
-        checkpoint_id = checkpoint_record.checkpoint_id
-        checkpoint = CheckPoint.objects.get(id=checkpoint_id)
-        if checkpoint_record.number == checkpoint.number:
-            checkpoint_record.is_correct = True
-            return checkpoint.score
+        race_runner = checkpoint_record.race_runner
+        race = race_runner.race
+        for checkpoint in race.checkpoints.all():
+            if checkpoint_record.number == checkpoint.number:
+                # Assuming checkpoint.location and checkpoint_record.location are Point objects
+                distance = checkpoint.location.distance(checkpoint_record.location)
+                if distance <= 5: 
+                    checkpoint_record.is_correct = True
+                    checkpoint_record.save()
+
+                    # Load the current correct_checkpoints
+                    correct_checkpoints = race_runner.correct_checkpoints
+
+                    if correct_checkpoints is None:
+                        # If it's None, initialize it as an empty list
+                        correct_checkpoints = []
+
+                    # Append the new checkpoint number only if it's not already in the list
+                    if checkpoint_record.number not in correct_checkpoints:
+                        correct_checkpoints.append(checkpoint_record.number)
+
+                    # Save it back to the race_runner
+                    race_runner.correct_checkpoints = correct_checkpoints
+                    race_runner.save()
+                    return checkpoint.score  # The checkpoint_record is within the checkpoint's radius
+                break
         return 0
 
-    def verify_total_time(self, total_time, race_runner):
-        time_limit = race_runner.race.time_limit
-        if total_time <= time_limit:
-            return 0
-        return (total_time.total_seconds() - time_limit.total_seconds())* self.NegativePointPerSecond
+
+# Logic to verify once at the end
+# class EndRaceRunnerView(APIView):
+
+#     NegativePointPerSecond = 0.1
+
+#     def get_permissions(self):
+#         return [IsOwnerRaceRunner()]
+    
+#     def patch(self, request, *args, **kwargs):
+#         race_runner_id = request.data.get('race_runner_id')
+#         try:
+#             race_runner = RaceRunner.objects.get(id=race_runner_id)
+#         except RaceRunner.DoesNotExist:
+#             return Response({'message: Not found'}, status=status.HTTP_404_NOT_FOUND)
+#         # if race_runner.is_finished:
+#         #     return Response({'message': 'You have terminated your race'}, status=status.HTTP_400_BAD_REQUEST)
+#         total_time = request.data.get('total_time')
+#         if total_time is not None:
+#             # Convert the total_time string to a timedelta object
+#             hours, minutes, seconds = map(int, total_time.split(':'))
+#             total_time = timedelta(hours=hours, minutes=minutes, seconds=seconds)
+#             race_runner.total_time = total_time
+#             race_runner.score = 0
+#             for checkpoint_record in race_runner.checkpoint_records.all():
+#                 score = self.verify_checkpoint_record(checkpoint_record)
+#                 if checkpoint_record.is_correct:
+#                     race_runner.score += score
+#                     # Delete the checkpoint record
+#                     checkpoint_record.delete()
+            
+#             negative_point = self.verify_total_time(total_time, race_runner)
+#             # return Response({'score': race_runner.score, 'negative_point': negative_point}, status=status.HTTP_200_OK)
+#             race_runner.score = max(0, race_runner.score - negative_point)
+#             race_runner.is_finished = True
+
+#         race_runner.save()
+#         serializer = RaceRunnerSerializer(race_runner, context={'request': request})
+#         return Response(serializer.data, status=status.HTTP_200_OK)       
+    
+#     def verify_checkpoint_record(self, checkpoint_record):
+#         race_runner = checkpoint_record.race_runner
+#         race = race_runner.race
+#         for checkpoint in race.checkpoints.all():
+#             if checkpoint_record.number == checkpoint.number:
+#                 # Assuming checkpoint.location and checkpoint_record.location are Point objects
+#                 distance = checkpoint.location.distance(checkpoint_record.location)
+#                 if distance <= 5: 
+#                     checkpoint_record.is_correct = True
+#                     checkpoint_record.save()
+
+#                     # Load the current correct_checkpoints
+#                     correct_checkpoints = race_runner.correct_checkpoints
+
+#                     if correct_checkpoints is None:
+#                         # If it's None, initialize it as an empty list
+#                         correct_checkpoints = []
+
+#                     # Append the new checkpoint number
+#                     correct_checkpoints.append(checkpoint_record.number)
+
+#                     # Save it back to the race_runner
+#                     race_runner.correct_checkpoints = correct_checkpoints
+#                     race_runner.save()
+#                     return checkpoint.score  # The checkpoint_record is within the checkpoint's radius
+#                 break
+#         return 0
+
+#     def verify_total_time(self, total_time, race_runner):
+#         time_limit = race_runner.race.time_limit
+#         if total_time <= time_limit:
+#             return 0
+#         return (total_time.total_seconds() - time_limit.total_seconds()) * self.NegativePointPerSecond
+
+class EndRaceRunnerView(APIView):
+    
+        NegativePointPerSecond = 0.1
+    
+        def get_permissions(self):
+            return [IsOwnerRaceRunner()]
+        
+        def patch(self, request, *args, **kwargs):
+            race_runner_id = request.data.get('race_runner_id')
+            try:
+                race_runner = RaceRunner.objects.get(id=race_runner_id)
+            except RaceRunner.DoesNotExist:
+                return Response({'message: Not found'}, status=status.HTTP_404_NOT_FOUND)
+            if race_runner.is_finished:
+                return Response({'message': 'You have terminated your race'}, status=status.HTTP_400_BAD_REQUEST)
+            total_time = request.data.get('total_time')
+            if total_time is not None:
+                # Convert the total_time string to a timedelta object
+                hours, minutes, seconds = map(int, total_time.split(':'))
+                total_time = timedelta(hours=hours, minutes=minutes, seconds=seconds)
+                race_runner.total_time = total_time
+                negative_point = self.verify_total_time(total_time, race_runner)
+                # return Response({'score': race_runner.score, 'negative_point': negative_point}, status=status.HTTP_200_OK)
+                race_runner.score = max(0, race_runner.score - negative_point)
+                race_runner.is_finished = True
+
+            race_runner.save()
+            serializer = RaceRunnerSerializer(race_runner, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)    
+           
+        def verify_total_time(self, total_time, race_runner):
+            time_limit = race_runner.race.time_limit
+            if total_time <= time_limit:
+                return 0
+            return (total_time.total_seconds() - time_limit.total_seconds()) * self.NegativePointPerSecond
 
 class ScoreTotalView(APIView):
     def get(self, request, *args, **kwargs):
-        event_id = request.data.get('event_id')
+        event_id = self.kwargs['pk']
         if not event_id:
             return Response({'message': 'Event ID is required'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -477,12 +574,13 @@ class ScoreTotalView(APIView):
 
         for runner in event.group_runner.members.all():
             race_runners = RaceRunner.objects.filter(runner=runner, race__event=event)
-            total_time = sum((race_runner.time for race_runner in race_runners), timedelta())  # Sum up the times
-            total_score = sum(race_runner.score for race_runner in race_runners)  # Sum up the scores
+            total_time = sum((race_runner.total_time for race_runner in race_runners if race_runner.total_time is not None), timedelta())
+            total_score = sum(race_runner.score for race_runner in race_runners if race_runner.score is not None)            
+
             response_data.append({
                 'runner_id': runner.id,
                 'runner_username': runner.username,
-                'total_time': total_time.total_seconds(),  # Convert total time to seconds
+                'total_time': duration_string(total_time),  # Convert total time to datetime
                 'total_score': total_score
             })
 

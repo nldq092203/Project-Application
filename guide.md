@@ -110,8 +110,9 @@ CREATE_SESSION_ON_LOGIN
     + PUT or PATCH - update a specific race - time_limit, race_type, name
     + DELETE - delete a specific race
 
-#### Create a CheckPoint
-- POST - {{baseURL}}/api/checkpoints/
+#### CheckPoint
+
+- Create a checkpoint - POST - {{baseURL}}/api/checkpoints/ 
 -> body: number + location + race_id + score
 
 
@@ -147,14 +148,16 @@ CREATE_SESSION_ON_LOGIN
 #### RaceRunner
 - Retrieve RaceRunner status ( use to verify all the checkpoints have been recorded) - GET - {{baseURL}}/api/race-runner-status/<int:pk>/
 
-- End RaceRunner - PATCH - {{baseURL}}/api/end-race-runner/
--> body: race_runner_id + total_time
--> count the score and record total_time + delete the CheckPointRecord
--> response: data updated
 
-#### Checkpoint
+#### CheckpointRecord
 - Record a CheckPoint - POST - {{baseURL}}/api/record-checkpoint/
--> body: number + checkpoint_id + race_runner_id
+-> body: number + location + race_runner_id
+-> All the logic to count score and save the correct checkpointrecord have been done
 
+#### End RaceRunner
+- PATCH - {{baseURL}}/api/end-race-runner
+-> body: race_runner_id + total_time (record by the clock in FrontEnd)
+race_runner_id : when start a race (above) all info about the RaceRunner created will be returned in the response so can save the race_runner_id as a variable to use during the RaceRunner taking place
 
+-> response: data updated
 

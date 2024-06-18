@@ -56,37 +56,7 @@ class LocationSerializer(serializers.ModelSerializer):
         return value
     class Meta:
         model = models.Location
-        fields = ['name', 'start_point']
-class EventSerializer(serializers.ModelSerializer):
-    start = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
-    end = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
-    location_id = serializers.IntegerField(write_only=True)
-    group_runner_id = serializers.IntegerField(write_only=True)
-
-    # coach = ParticipantSerializer(read_only=True)
-    group_runner = GroupRunnerSerializer(read_only=True)
-    location = LocationSerializer(read_only=True)
-    # coach = serializers.HyperlinkedRelatedField(
-    #     view_name='participant-detail',
-    #     read_only=True
-    # )
-    # group_runner = serializers.HyperlinkedRelatedField(
-    #     view_name='group-runner-detail',
-    #     read_only=True
-    # )
-    # location = serializers.HyperlinkedRelatedField(
-    #     view_name='location-detail',
-    #     read_only=True
-    # )
-    def validate(self, attrs):
-        if 'start' in attrs and 'end' in attrs:
-            if attrs['start'] > attrs['end']:
-                raise serializers.ValidationError("The start time cannot be later than the end time.")
-        return attrs
-        
-    class Meta:
-        model = models.Event
-        fields = ['id', 'name', 'start', 'end', 'location', 'location_id', 'coach', 'group_runner', 'group_runner_id', 'publish', 'subtitle', 'description', 'image', 'department', 'is_finished']
+        fields = ['id', 'name', 'start_point']
 
 
 
@@ -106,23 +76,19 @@ class CheckPointSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.CheckPoint
-        fields = ['number', 'location', 'race_id', 'score']
+        fields = ['id', 'number', 'location', 'race_id', 'score']
         validators = [
             UniqueTogetherValidator(
                 queryset=models.CheckPoint.objects.all(),
                 fields=['number', 'race_id']
             )
         ]
-class CheckPointWithoutNumberSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.CheckPoint
-        exclude = ['number']
+
 class RaceSerializer(serializers.ModelSerializer):
     # event = serializers.HyperlinkedRelatedField(
     #     view_name='event-detail',
     #     read_only=True
     # )
-    event = EventSerializer(read_only=True)
     event_id = serializers.IntegerField(write_only=True)
     checkpoints = serializers.SerializerMethodField()
     now = serializers.SerializerMethodField()
@@ -156,19 +122,52 @@ class RaceSerializer(serializers.ModelSerializer):
             else:
                 # Logic for runner
                 # return []
-                return CheckPointWithoutNumberSerializer(obj.checkpoints, many=True).data
+                return CheckPointSerializer(obj.checkpoints, many=True).data
         else:
             # Default logic
             return []
 
     class Meta:
         model = models.Race
-        fields = ['name', 'event', 'event_id', 'time_limit', 'race_type', 'checkpoints', 'now']
+        fields = ['id', 'name', 'event_id', 'time_limit', 'race_type', 'checkpoints', 'now']
+
+class EventSerializer(serializers.ModelSerializer):
+    start = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
+    end = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
+    location_id = serializers.IntegerField(write_only=True)
+    group_runner_id = serializers.IntegerField(write_only=True)
+
+    races = RaceSerializer(read_only=True, many=True)
+    # coach = ParticipantSerializer(read_only=True)
+    group_runner = GroupRunnerSerializer(read_only=True)
+    location = LocationSerializer(read_only=True)
+    # coach = serializers.HyperlinkedRelatedField(
+    #     view_name='participant-detail',
+    #     read_only=True
+    # )
+    # group_runner = serializers.HyperlinkedRelatedField(
+    #     view_name='group-runner-detail',
+    #     read_only=True
+    # )
+    # location = serializers.HyperlinkedRelatedField(
+    #     view_name='location-detail',
+    #     read_only=True
+    # )
+    def validate(self, attrs):
+        if 'start' in attrs and 'end' in attrs:
+            if attrs['start'] > attrs['end']:
+                raise serializers.ValidationError("The start time cannot be later than the end time.")
+        return attrs
+        
+    class Meta:
+        model = models.Event
+        fields = ['id', 'name', 'start', 'end', 'location', 'location_id', 'coach', 'races', 'group_runner', 'group_runner_id', 'publish', 'subtitle', 'description', 'image', 'department', 'is_finished']
+
 class CheckPointRecordSerializer(serializers.ModelSerializer):
     race_runner_id = serializers.IntegerField(write_only=True)
     class Meta:
         model = models.CheckPointRecord
-        fields = ['number', 'location', 'is_correct', 'race_runner_id']
+        fields = ['id', 'number', 'location', 'is_correct', 'race_runner_id']
 
 class RaceRunnerSerializer(serializers.ModelSerializer):
     # runner = serializers.HyperlinkedRelatedField(

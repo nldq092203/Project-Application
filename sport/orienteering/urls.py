@@ -38,4 +38,5 @@ urlpatterns = [
     path('record-checkpoint/', views.RecordCheckPointView.as_view(), name='record_checkpoint'),
     path('checkpoints/', views.CheckPointListView.as_view(), name='checkpoints'),
     path('end-race-runner/', views.EndRaceRunnerView.as_view(), name='end-race-runner'),
+    path('score-total/<int:pk>/', views.ScoreTotalView.as_view(), name='score-total'),
 ]

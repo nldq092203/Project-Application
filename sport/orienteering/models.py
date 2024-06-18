@@ -57,7 +57,7 @@ class CheckPoint(models.Model):
     number = models.IntegerField()
     location = gis_models.PointField() 
     race = models.ForeignKey(Race, on_delete=models.CASCADE, related_name='checkpoints')
-    score = models.IntegerField(blank=True, null=True)
+    score = models.IntegerField(default=0, blank=True, null=True)
 
 class CheckPointRecord(models.Model):
     number = models.IntegerField()
@@ -70,7 +70,7 @@ class RaceRunner(models.Model):
     runner = models.ForeignKey(Participant, on_delete=models.CASCADE, related_name="race_runners")
     race = models.ForeignKey(Race, on_delete=models.CASCADE, related_name="race_runners")
     total_time = models.DurationField(blank=True, null=True)
-    score = models.IntegerField(blank=True, null=True)
+    score = models.IntegerField(default=0,blank=True, null=True)
     is_finished = models.BooleanField(default=False)
     correct_checkpoints = models.JSONField(blank=True, null=True)
 
@@ -78,6 +78,7 @@ class RaceRunner(models.Model):
         super().__init__(*args, **kwargs)
         if self.correct_checkpoints is None:
             self.correct_checkpoints = []
+    
 
 
 
