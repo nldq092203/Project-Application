@@ -55,9 +55,16 @@ class CustomParticipantCreateView(UserViewSet):
 class CustomTokenCreateView(TokenCreateView):
     def _action(self, serializer):
         token = super(CustomTokenCreateView, self)._action(serializer)
+        username = serializer.validated_data.get('username')
+        user = Participant.objects.get(username=username)
+        role = user.groups.first().name if user.groups.exists() else 'Runner' 
+
         return Response({
             'message': 'Login successfully',
-            'accessToken': token.data['auth_token'],
+            'data': {
+                'accessToken': token.data['auth_token'],
+                'role': role
+            }
         })
 
 # Logout
