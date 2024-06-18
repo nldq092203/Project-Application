@@ -15,6 +15,7 @@ celery = "*"
 redis = "*"
 python-dotenv = "*"
 django-filter = "*"
+pytz = "*"
 
 [dev-packages]
 

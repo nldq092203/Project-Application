@@ -2,6 +2,7 @@ from rest_framework import serializers
 from . import models
 from django.utils import timezone
 from rest_framework.validators import UniqueTogetherValidator
+import pytz
 
 class ParticipantSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -87,25 +88,7 @@ class EventSerializer(serializers.ModelSerializer):
         model = models.Event
         fields = ['id', 'name', 'start', 'end', 'location', 'location_id', 'coach', 'group_runner', 'group_runner_id', 'publish', 'subtitle', 'description', 'image', 'department', 'is_finished']
 
-class RaceSerializer(serializers.ModelSerializer):
-    # event = serializers.HyperlinkedRelatedField(
-    #     view_name='event-detail',
-    #     read_only=True
-    # )
-    event = EventSerializer(read_only=True)
-    event_id = serializers.IntegerField(write_only=True)
 
-    def validate(self, attrs):
-        # if attrs['time_limit'] > attrs['event'].end - attrs['event'].start:
-        #     raise serializers.ValidationError("Time limit must be less than event duration")
-        # if attrs['time_limit'] < 0:
-        #     raise serializers.ValidationError("Time limit must be positive")
-        
-        return super().validate(attrs)
-
-    class Meta:
-        model = models.Race
-        fields = ['name', 'event', 'event_id', 'time_limit', 'race_type']
 
 class RaceTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -118,23 +101,74 @@ class CheckPointSerializer(serializers.ModelSerializer):
     #     view_name='race-detail',
     #     read_only=True
     # )
-    race = RaceSerializer(read_only=True)
+    # race = RaceSerializer(read_only=True)
     race_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = models.CheckPoint
-        fields = ['number', 'location', 'race',  'race_id', 'score']
+        fields = ['number', 'location', 'race_id', 'score']
         validators = [
             UniqueTogetherValidator(
                 queryset=models.CheckPoint.objects.all(),
                 fields=['number', 'race_id']
             )
         ]
+class CheckPointWithoutNumberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CheckPoint
+        exclude = ['number']
+class RaceSerializer(serializers.ModelSerializer):
+    # event = serializers.HyperlinkedRelatedField(
+    #     view_name='event-detail',
+    #     read_only=True
+    # )
+    event = EventSerializer(read_only=True)
+    event_id = serializers.IntegerField(write_only=True)
+    checkpoints = serializers.SerializerMethodField()
+    now = serializers.SerializerMethodField()
+    
+
+    def get_now(self, obj):
+        return timezone.now()
+    
+    def validate(self, attrs):
+        # if attrs['time_limit'] > attrs['event'].end - attrs['event'].start:
+        #     raise serializers.ValidationError("Time limit must be less than event duration")
+        # if attrs['time_limit'] < 0:
+        #     raise serializers.ValidationError("Time limit must be positive")
+        
+        return super().validate(attrs)
+    
+    def get_checkpoints(self, obj):
+        request = self.context.get('request')
+        user = request.user
+        if user.groups.filter(name='Coach').exists():
+            # Logic for coach
+            return CheckPointSerializer(obj.checkpoints, many=True).data
+        elif user.groups.filter(name='Runner').exists():
+            paris_tz = pytz.timezone('Europe/Paris')
+            now = timezone.now()
+            paris_now = now.astimezone(paris_tz)
+            start = obj.event.start.astimezone(paris_tz)
+            if  start > paris_now:
+                # Don't show checkpoints
+                return []
+            else:
+                # Logic for runner
+                # return []
+                return CheckPointWithoutNumberSerializer(obj.checkpoints, many=True).data
+        else:
+            # Default logic
+            return []
+
+    class Meta:
+        model = models.Race
+        fields = ['name', 'event', 'event_id', 'time_limit', 'race_type', 'checkpoints', 'now']
 class CheckPointRecordSerializer(serializers.ModelSerializer):
     race_runner_id = serializers.IntegerField(write_only=True)
     class Meta:
         model = models.CheckPointRecord
-        fields = ['number', 'checkpoint_id', 'is_correct', 'race_runner_id']
+        fields = ['number', 'location', 'is_correct', 'race_runner_id']
 
 class RaceRunnerSerializer(serializers.ModelSerializer):
     # runner = serializers.HyperlinkedRelatedField(
@@ -151,7 +185,13 @@ class RaceRunnerSerializer(serializers.ModelSerializer):
     race = RaceSerializer(read_only=True)
     race_id = serializers.IntegerField(write_only=True)
     checkpoint_records = CheckPointRecordSerializer(many=True, read_only=True)
+    correct_checkpoints = serializers.JSONField(required=False)
 
+    def validate_correct_checkpoints(self, value):
+        if not all(isinstance(i, int) for i in value):
+            raise serializers.ValidationError("All items in correct_checkpoints must be integers")
+        return value
+    
     def validate(self, attrs):
         # if attrs['total_time'] < 0:
         #     raise serializers.ValidationError("Total time must be positive")
@@ -161,5 +201,5 @@ class RaceRunnerSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = models.RaceRunner
-        fields = ['id', 'runner', 'runner_id', 'race', 'race_id', 'total_time', 'score', 'checkpoint_records']
+        fields = ['id', 'runner', 'runner_id', 'race', 'race_id', 'total_time', 'score', 'checkpoint_records',  'correct_checkpoints']
 

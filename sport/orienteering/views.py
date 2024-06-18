@@ -13,7 +13,7 @@ from .serializers import LocationSerializer, ParticipantSerializer, GroupRunnerS
 from django_filters.rest_framework import DjangoFilterBackend
 from . import filters
 from datetime import timedelta
-
+from django.utils import timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ class CustomParticipantCreateView(UserViewSet):
                     group, created = Group.objects.get_or_create(name='Coach')
                     user.groups.add(group)
                 elif role == 'Runner':
-                    group, created = Group.objects.get_or_create(name='Coach')
+                    group, created = Group.objects.get_or_create(name='Runner')
                     user.groups.add(group)
                 custom_data = {"message": "Participant created successfully", "data": response.data}  
                 return Response(custom_data, status=status.HTTP_201_CREATED)
@@ -58,7 +58,6 @@ class CustomTokenCreateView(TokenCreateView):
         username = serializer.validated_data.get('username')
         user = Participant.objects.get(username=username)
         role = user.groups.first().name if user.groups.exists() else 'Runner' 
-
         return Response({
             'message': 'Login successfully',
             'data': {
@@ -272,6 +271,9 @@ class RaceCreateView(generics.CreateAPIView):
     def get_permissions(self):
         return [IsCoachOrAdminUser()]
     
+    def get_serializer_context(self):
+        return {'request': self.request}
+    
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
         data['event_id'] = request.data.get('event_id')
@@ -287,7 +289,7 @@ class RaceCreateView(generics.CreateAPIView):
         
         race_type_name = request.data.get('race_type_name', 'Memorize')
         data['race_type'] = RaceType.objects.get(name=race_type_name).id
-        serializer = RaceSerializer(data=data)
+        serializer = RaceSerializer(data=data, context=self.get_serializer_context())
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -331,7 +333,7 @@ class AllEventRunnerView(generics.ListAPIView):
     filterset_fields = ['is_finished', 'department', 'group_runner__name']
     ordering_fields = ['-start', 'start', 'end', '-end']
     def get_permissions(self):
-        return [IsRunner()]
+        return []
     
     def get_queryset(self):
         my_participate_events = Event.objects.filter(publish=True).order_by('-start')
@@ -377,6 +379,7 @@ class RaceDetailRunnerView(generics.RetrieveUpdateDestroyAPIView):
     def get_permissions(self):
         return [IsRunner()]
 
+
 class StartRaceView(APIView):
     def post(self, request, *args, **kwargs):
         race_id = request.data.get('race_id')
@@ -393,7 +396,7 @@ class StartRaceView(APIView):
         race_runner = RaceRunner.objects.create(race=race, runner=request.user)
         serializer = RaceRunnerSerializer(race_runner)
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({'message': 'Start run', 'data': serializer.data}, status=status.HTTP_201_CREATED)
     
 class RaceRunnerDetailView(generics.RetrieveAPIView):
     serializer_class = RaceRunnerSerializer
@@ -462,3 +465,27 @@ class EndRaceRunnerView(APIView):
         if total_time <= time_limit:
             return 0
         return (total_time.total_seconds() - time_limit.total_seconds())* self.NegativePointPerSecond
+
+class ScoreTotalView(APIView):
+    def get(self, request, *args, **kwargs):
+        event_id = request.data.get('event_id')
+        if not event_id:
+            return Response({'message': 'Event ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        event = Event.objects.get(id=event_id)
+        response_data = []
+
+        for runner in event.group_runner.members.all():
+            race_runners = RaceRunner.objects.filter(runner=runner, race__event=event)
+            total_time = sum((race_runner.time for race_runner in race_runners), timedelta())  # Sum up the times
+            total_score = sum(race_runner.score for race_runner in race_runners)  # Sum up the scores
+            response_data.append({
+                'runner_id': runner.id,
+                'runner_username': runner.username,
+                'total_time': total_time.total_seconds(),  # Convert total time to seconds
+                'total_score': total_score
+            })
+
+        return Response(response_data, status=status.HTTP_200_OK)
+             
+

@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.gis.db import models as gis_models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 
-
 class Participant(AbstractUser):
     username = models.CharField(max_length=150, unique=True)
     ROLE_CHOICES = [
@@ -11,14 +10,14 @@ class Participant(AbstractUser):
     ]
     department = models.CharField(max_length=100)
     image = models.ImageField(upload_to='profile_images', blank=True, null=True)
-    group = models.ForeignKey(Group, related_name='custom_user_group', on_delete=models.CASCADE, null=True)
+    group = models.ForeignKey(Group, related_name='custom_user_group', on_delete=models.CASCADE,  null=True)
     user_permission = models.ForeignKey(Permission, related_name='custom_user_permission', on_delete=models.CASCADE, null=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     
 class GroupRunner(models.Model):
     name = models.CharField(max_length=50)
     department = models.CharField(max_length=50)
-    members = models.ManyToManyField(Participant, related_name='member_group_runners')
+    members = models.ManyToManyField(Participant, related_name='member_group_runners', null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -62,7 +61,7 @@ class CheckPoint(models.Model):
 
 class CheckPointRecord(models.Model):
     number = models.IntegerField()
-    checkpoint_id =   models.IntegerField()
+    location = gis_models.PointField(null=True)
     is_correct = models.BooleanField(blank=True, null=True)
     race_runner = models.ForeignKey('RaceRunner', on_delete=models.CASCADE, related_name='checkpoint_records')
 
@@ -73,7 +72,12 @@ class RaceRunner(models.Model):
     total_time = models.DurationField(blank=True, null=True)
     score = models.IntegerField(blank=True, null=True)
     is_finished = models.BooleanField(default=False)
+    correct_checkpoints = models.JSONField(blank=True, null=True)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.correct_checkpoints is None:
+            self.correct_checkpoints = []
 
 
 
