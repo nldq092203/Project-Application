@@ -2,17 +2,23 @@ from django.contrib import admin
 from . import models
 
 class ParticipantAdmin(admin.ModelAdmin):
-    list_display = ['username', 'first_name', 'last_name', 'organization', 'email']
-    search_fields = ['username', 'first_name', 'last_name', 'organization']
-    list_filter = ['organization']
+    list_display = ['username', 'first_name', 'last_name', 'department', 'email', 'role']
+    search_fields = ['username', 'first_name', 'last_name', 'department']
+    list_filter = ['department']
     fieldsets = [
         (None, {'fields': ['username', 'password']}),
-        ('Personal info', {'fields': ['first_name', 'last_name', 'organization', 'image', 'email']}),
+        ('Personal info', {'fields': ['first_name', 'last_name', 'department', 'image', 'email', 'role']}),
     ]
 
-class GroupRunnerAdmin(admin.ModelAdmin):
-    list_display = ['name']
+class LocationAdmin(admin.ModelAdmin):
+    list_display = ['name', 'start_point']
     search_fields = ['name']
+    fieldsets = [
+        (None, {'fields': ['name', 'start_point']}),
+    ]
+class GroupRunnerAdmin(admin.ModelAdmin):
+    list_display = ['name', 'department']
+    search_fields = ['name', 'department']
     filter_horizontal = ['members']
 
 class EventAdmin(admin.ModelAdmin):
@@ -21,7 +27,7 @@ class EventAdmin(admin.ModelAdmin):
     list_filter = ['publish']
     fieldsets = [
         (None, {'fields': ['name', 'start', 'end', 'location', 'coach', 'group_runner', 'publish']}),
-        ('Description', {'fields': ['subtitle', 'description', 'image', 'organization']}),
+        ('Description', {'fields': ['subtitle', 'description', 'image', 'department']}),
     ]
 
 class RaceAdmin(admin.ModelAdmin):
@@ -53,4 +59,4 @@ admin.site.register(models.Race, RaceAdmin)
 admin.site.register(models.CheckPoint, CheckPointAdmin)
 admin.site.register(models.RaceRunner, RaceRunnerAdmin)
 admin.site.register(models.RaceType, RaceTypeAdmin)
-
+admin.site.register(models.Location, LocationAdmin)

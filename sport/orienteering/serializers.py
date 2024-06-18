@@ -4,94 +4,162 @@ from django.utils import timezone
 from rest_framework.validators import UniqueTogetherValidator
 
 class ParticipantSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+    def validate_username(self, value):
+        if models.Participant.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Participant with this username already exists.")
+        return value
+    
+    def create(self, validated_data):
+        user = models.Participant(
+            email=validated_data['email'],
+            username=validated_data['username'],
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
+            department=validated_data.get('department', ''),
+            image=validated_data.get('image', None), 
+            role=validated_data.get('role', 'Runner')
+        ) 
+        user.set_password(validated_data['password']) # Hashing the password is required when using access tokens
+        user.save()
+        return user
     class Meta:
         model = models.Participant
-        fields = ['id', 'username', 'first_name', 'last_name', 'organization', 'image', 'role']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'department', 'image', 'role', 'password']
+
+
 
 class GroupRunnerSerializer(serializers.ModelSerializer):
-    members = serializers.HyperlinkedRelatedField(
-        many=True,
-        queryset=models.Participant.objects.all(),
-        view_name='participant-detail',
-    )
+    # members = serializers.HyperlinkedRelatedField(
+    #     many=True,
+    #     view_name='participant-detail',
+    #     read_only=True
+    # )
+    # members = ParticipantSerializer(many=True, read_only=True)
+
     class Meta:
         model = models.GroupRunner
-        fields = ['name', 'members']
+        fields = ['id', 'name', 'members', 'department']
+        validators = [
+            UniqueTogetherValidator(
+                queryset=models.GroupRunner.objects.all(),
+                fields=['name', 'department']
+            )
+        ]
 
+
+class LocationSerializer(serializers.ModelSerializer):
+    def validate_name(self, value):
+        if models.Location.objects.filter(name=value).exists():
+            raise serializers.ValidationError("Location with this name already exists.")
+        return value
+    class Meta:
+        model = models.Location
+        fields = ['name', 'start_point']
 class EventSerializer(serializers.ModelSerializer):
-    coach = serializers.HyperlinkedRelatedField(
-        view_name='participant-detail',
-        queryset=models.Participant.objects.all()
-    )
-    GroupRunner = serializers.HyperlinkedRelatedField(
-        view_name='group-runner-detail',
-        queryset=models.GroupRunner.objects.all()
-    )
+    start = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
+    end = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
+    location_id = serializers.IntegerField(write_only=True)
+    group_runner_id = serializers.IntegerField(write_only=True)
 
+    # coach = ParticipantSerializer(read_only=True)
+    group_runner = GroupRunnerSerializer(read_only=True)
+    location = LocationSerializer(read_only=True)
+    # coach = serializers.HyperlinkedRelatedField(
+    #     view_name='participant-detail',
+    #     read_only=True
+    # )
+    # group_runner = serializers.HyperlinkedRelatedField(
+    #     view_name='group-runner-detail',
+    #     read_only=True
+    # )
+    # location = serializers.HyperlinkedRelatedField(
+    #     view_name='location-detail',
+    #     read_only=True
+    # )
     def validate(self, attrs):
-        if attrs['start'] > attrs['end']:
-            raise serializers.ValidationError("End date must be later than start date")
-        if attrs['start'] < timezone.now():
-            raise serializers.ValidationError("Start date must be later than current date")
-        return super().validate(attrs)
+        if 'start' in attrs and 'end' in attrs:
+            if attrs['start'] > attrs['end']:
+                raise serializers.ValidationError("The start time cannot be later than the end time.")
+        return attrs
         
     class Meta:
         model = models.Event
-        fields = ['name', 'start', 'end', 'location', 'coach', 'group_runner', 'publish', 'subtitle', 'description', 'image', 'organization']
+        fields = ['id', 'name', 'start', 'end', 'location', 'location_id', 'coach', 'group_runner', 'group_runner_id', 'publish', 'subtitle', 'description', 'image', 'department', 'is_finished']
 
 class RaceSerializer(serializers.ModelSerializer):
-    event = serializers.HyperlinkedRelatedField(
-        view_name='event-detail',
-        queryset=models.Event.objects.all()
-    )
+    # event = serializers.HyperlinkedRelatedField(
+    #     view_name='event-detail',
+    #     read_only=True
+    # )
+    event = EventSerializer(read_only=True)
+    event_id = serializers.IntegerField(write_only=True)
 
     def validate(self, attrs):
-        if attrs['time_limit'] > attrs['event'].end - attrs['event'].start:
-            raise serializers.ValidationError("Time limit must be less than event duration")
-        if attrs['time_limit'] < 0:
-            raise serializers.ValidationError("Time limit must be positive")
+        # if attrs['time_limit'] > attrs['event'].end - attrs['event'].start:
+        #     raise serializers.ValidationError("Time limit must be less than event duration")
+        # if attrs['time_limit'] < 0:
+        #     raise serializers.ValidationError("Time limit must be positive")
         
         return super().validate(attrs)
 
     class Meta:
         model = models.Race
-        fields = ['name', 'event', 'time_limit', 'type']
+        fields = ['name', 'event', 'event_id', 'time_limit', 'race_type']
+
+class RaceTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.RaceType
+        fields = '__all__'
+
+
+class CheckPointSerializer(serializers.ModelSerializer):
+    # race = serializers.HyperlinkedRelatedField(
+    #     view_name='race-detail',
+    #     read_only=True
+    # )
+    race = RaceSerializer(read_only=True)
+    race_id = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = models.CheckPoint
+        fields = ['number', 'location', 'race',  'race_id', 'score']
+        validators = [
+            UniqueTogetherValidator(
+                queryset=models.CheckPoint.objects.all(),
+                fields=['number', 'race_id']
+            )
+        ]
+class CheckPointRecordSerializer(serializers.ModelSerializer):
+    race_runner_id = serializers.IntegerField(write_only=True)
+    class Meta:
+        model = models.CheckPointRecord
+        fields = ['number', 'checkpoint_id', 'is_correct', 'race_runner_id']
 
 class RaceRunnerSerializer(serializers.ModelSerializer):
-    runner = serializers.HyperlinkedRelatedField(
-        view_name='participant-detail',
-        queryset=models.Participant.objects.all()
-    )
+    # runner = serializers.HyperlinkedRelatedField(
+    #     view_name='participant-detail',
+    #     read_only=True
+    # )
+    runner = ParticipantSerializer(read_only=True)
+    runner_id = serializers.IntegerField(write_only=True)
 
-    race = serializers.HyperlinkedRelatedField(
-        view_name='race-detail',
-        queryset = models.Race.objects.all()
-    )
+    # race = serializers.HyperlinkedRelatedField(
+    #     view_name='race-detail',
+    #     read_only=True
+    # )
+    race = RaceSerializer(read_only=True)
+    race_id = serializers.IntegerField(write_only=True)
+    checkpoint_records = CheckPointRecordSerializer(many=True, read_only=True)
 
     def validate(self, attrs):
-        if attrs['total_time'] < 0:
-            raise serializers.ValidationError("Total time must be positive")
+        # if attrs['total_time'] < 0:
+        #     raise serializers.ValidationError("Total time must be positive")
         if attrs['score'] < 0:
             raise serializers.ValidationError("Score must be positive")
         return super().validate(attrs)
     
     class Meta:
         model = models.RaceRunner
-        fields = ['runner', 'race', 'total_time', 'score']
+        fields = ['id', 'runner', 'runner_id', 'race', 'race_id', 'total_time', 'score', 'checkpoint_records']
 
-class CheckPointSerializer(serializers.ModelSerializer):
-    race = serializers.HyperlinkedRelatedField(
-        view_name='race-detail',
-        queryset = models.Race.objects.all()
-    )
-
-    class Meta:
-        model = models.CheckPoint
-        fields = ['number', 'location', 'race']
-        validators = [
-            UniqueTogetherValidator(
-                queryset=models.CheckPoint.objects.all(),
-                fields=['number', 'race']
-            )
-        ]
-                  

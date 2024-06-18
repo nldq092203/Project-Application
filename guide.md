@@ -9,6 +9,10 @@
 -> body: username + password + first_name + last_name + email + ....
 -> response.data: email + username
 
+2 separate mode : Coach and Runner
+- Coach have to submit the valid code_secret (in Settings.py) to register -> Group: Coach
+- other-> Group: Runner
+
 2. Login: POST request - {{baseURL}}/api/auth/token/login/
 -> body: username + password
 -> response.data: accessToken
@@ -40,8 +44,117 @@ PASSWORD_CHANGED_EMAIL_CONFIRMATION
 CREATE_SESSION_ON_LOGIN
 
 
-### App Logics
+### App Logics for Coach
 
+#### Location 
+- {{baseURL}}/api/locations/
+    + GET-list: List all the locations in database
+    + POST: Create a new location - body['name', 'start_point']
+    start_point: POINT (-30.5 10)
+- {{baseURL}}/api/locations/<int:pk>/
+    + GET-retrieve: Retrieve the detail information of specific location
+    + PUT or PATCH: Modify a specific location (name, start_point)
+    + DELETE: Delete a specific location
+
+#### GroupRunner
+- {{baseURL}}/api/group-runners-coach/
+    + GET-list: List all group_runners in database
+    -> Can search by ['department', 'name']
+    Ex: {{baseURL}}/api/group-runners-coach?department=MRI&name=TD2
+    + POST: Create new group_runner - body['name', 'department']
+- {{baseURL}}/api/group-runners-coach/<int:pk>/
+    + GET-retrieve: Retrieve the detail information of specific group_runner
+    + PUT or PATCH: Modify a specific group_runner (name, department)
+    + DELETE: Delete a specific group_runner
+
+#### Participant
+- {{baseURL}}/api/participants/<int:pk>/
+    + GET-retrieve: Retrieve the detail information of specific 
+
+#### Event
+- {{baseURL}}/api/events-coach/
+    + GET-list: List all events created by his own
+    -> Can search by ['is_finished', 'department', 'group_runner__name', 'publish']
+    Ex: {{baseURL}}/api/events-coach?is_finished=false&department=STI
+    + POST: Create new events 
+    body: name + start + end + ....
+    response: data created
+    publish = False by default
+
+- {{baseURL}}/api/events-coach/<int:pk>
+    + GET-retrieve: Retrieve a specific event
+    + PUT or PATCH: Update a specific event
+    + DELETE: Delete a specific event
+
+- Publish or Unpublish an event - POST - {{baseURL}}/api/event-publish/
+-> body: event_id + event_publish
+-> response: message + status: 200
+
+#### RaceType
+- {{baseURL}}/api/race-types/
+    + GET-list: List all race types
+    + POST-create: Create new race type
+    -> body: name + rule
+- {{baseURL}}/api/race-types/<int:pk>
+    + GET-retrieve: Retrieve a specific race type
+    + PUT or PATCH: Update a specific race type
+    + DELETE: Update a specific race types
+
+#### Race
+- Creat new Race for Event: POST - {{baseURL}}/api/create-race/
+-> body: event_id + name + time_limit + race_type_name
+-> response: corresponding race created
+
+- {{baseURL}}/api/race-coach/<int:pk>/
+    + GET - retrieve a specific race
+    + PUT or PATCH - update a specific race - time_limit, race_type, name
+    + DELETE - delete a specific race
+
+#### Create a CheckPoint
+- POST - {{baseURL}}/api/checkpoints/
+-> body: number + location + race_id + score
+
+
+### App Logics for Runner
+#### Location
+- {{baseURL}}/api/locations/<int:pk>/
+    + GET: Retrieve the detail information of specific location
+- {{baseURL}}/api/group-runners-coach/<int:pk>/
+    + GET: Retrieve the detail information of specific group_runner
+
+#### Participant
+- {{baseURL}}/api/participants/<int:pk>/
+    + PUT or PATCH: Participant can modify their own profile
+
+#### Join Group
+- POST - {{baseURL}}/api/join-group/
+-> body: runner_id + group_id
+-> response.message, status: 200
+
+#### Event
+- My events: GET - {{baseURL}}/api/my-event-runner/
+- All published events: GET - {{baseURL}}/api/all-event-runner/
+- Published events detail: GET - {{baseURL}}/api/all-event-runner/<int:pk>/
+
+#### Race
+- Retrieve race of published event: GET - {{baseURL}}/api/race-runner/<int:pk>/
+
+- Start a race: POST - {{baseURL}}/api/start-race/
+-> Runner has joined the event can start to run and Create a RaceRunner
+-> body: race_id
+-> Response: corresponding RaceRunner
+
+#### RaceRunner
+- Retrieve RaceRunner status ( use to verify all the checkpoints have been recorded) - GET - {{baseURL}}/api/race-runner-status/<int:pk>/
+
+- End RaceRunner - PATCH - {{baseURL}}/api/end-race-runner/
+-> body: race_runner_id + total_time
+-> count the score and record total_time + delete the CheckPointRecord
+-> response: data updated
+
+#### Checkpoint
+- Record a CheckPoint - POST - {{baseURL}}/api/record-checkpoint/
+-> body: number + checkpoint_id + race_runner_id
 
 
 

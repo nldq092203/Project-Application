@@ -140,7 +140,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication'
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 2,
+    'PAGE_SIZE': 5,
     'DEFAULT_FILTER_BACKENDS': [
         'rest_framework.filters.OrderingFilter',
         'rest_framework.filters.SearchFilter',
@@ -155,8 +155,11 @@ DJOSER ={
         'password_reset': 'djoser.email.PasswordResetEmail',
         'password_changed_confirmation': 'djoser.email.PasswordChangedConfirmationEmail',
     },
-    'COACH_SECRET_CODE': 'iamcoach'
+    'COACH_SECRET_CODE': 'iamcoach',
+    'SERIALIZERS': {
+        'user_create': 'orienteering.serializers.ParticipantSerializer',
+    },
 }
 
-GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal309'
+GDAL_LIBRARY_PATH = os.getenv('GDAL_LIBRARY_PATH', r'C:\OSGeo4W\bin\gdal309')
 DJANGO_COACH_SECRET_CODE = 'iamcoach'
