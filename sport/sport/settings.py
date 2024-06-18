@@ -166,3 +166,26 @@ DJOSER ={
 GDAL_LIBRARY_PATH = os.getenv('GDAL_LIBRARY_PATH', r'C:\OSGeo4W\bin\gdal309')
 DJANGO_COACH_SECRET_CODE = 'iamcoach'
 CORS_ALLOW_ALL_ORIGINS = True
+
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+}
+
+
+# # Celery Configuration Options
+# CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
+# CELERY_TIMEZONE = "UTC"
+# CELERY_TASK_TRACK_STARTED = True
+# CELERY_TASK_TIME_LIMIT = 30 * 60

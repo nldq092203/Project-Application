@@ -14,32 +14,43 @@ from django_filters.rest_framework import DjangoFilterBackend
 from . import filters
 from datetime import timedelta
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 ############################Authorization and Authentication#################################
 # Register
 class CustomParticipantCreateView(UserViewSet): 
     def create(self, request, *args, **kwargs):
-        role = request.data.get('role', 'Runner')
-        code_secret = request.data.get('secret_code')
-        if not code_secret and role == 'Coach':
-            return Response({"message": "Secret code is required."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        COACH_SECRET_CODE = settings.COACH_SECRET_CODE
+        try:
+            role = request.data.get('role', 'Runner')
+            code_secret = request.data.get('secret_code')
+            if not code_secret and role == 'Coach':
+                return Response({"message": "Secret code is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            COACH_SECRET_CODE = settings.COACH_SECRET_CODE
 
-        if role == 'Coach' and code_secret != COACH_SECRET_CODE:
-            return Response({"message": "Invalid secret code."}, status=status.HTTP_400_BAD_REQUEST)
-        response = super().create(request, *args, **kwargs)
-        if response.status_code == status.HTTP_201_CREATED:
-            user = Participant.objects.get(username=response.data['username'])
-            if role == 'Coach':
-                group = Group.objects.get(name='Coach')
-                user.groups.add(group)
-            elif role == 'Runner':
-                group = Group.objects.get(name='Runner')
-                user.groups.add(group)
-            custom_data = {"message": "Participant created successfully", "data": response.data}  
-            return Response(custom_data, status=status.HTTP_201_CREATED)
-        return response
-    
+            if role == 'Coach' and code_secret != COACH_SECRET_CODE:
+                return Response({"message": "Invalid secret code."}, status=status.HTTP_400_BAD_REQUEST)
+            response = super().create(request, *args, **kwargs)
+            if response.status_code == status.HTTP_201_CREATED:
+                user = Participant.objects.get(username=response.data['username'])
+                if role == 'Coach':
+                    group, created = Group.objects.get_or_create(name='Coach')
+                    user.groups.add(group)
+                elif role == 'Runner':
+                    group, created = Group.objects.get_or_create(name='Coach')
+                    user.groups.add(group)
+                custom_data = {"message": "Participant created successfully", "data": response.data}  
+                return Response(custom_data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.exception(e)
+            error_message = str(e)
+            if 'username' in error_message:
+                error_message = 'A user with this username already exists.'
+            return Response({"message": error_message}, status=status.HTTP_400_BAD_REQUEST)
+        
 # Login
 class CustomTokenCreateView(TokenCreateView):
     def _action(self, serializer):
