@@ -17,7 +17,6 @@ from django.utils import timezone
 import datetime
 from django.utils.duration import duration_string
 import logging
-from math import sqrt
 logger = logging.getLogger(__name__)
 
 
