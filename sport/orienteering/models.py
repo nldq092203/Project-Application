@@ -69,7 +69,7 @@ class CheckPointRecord(models.Model):
 class RaceRunner(models.Model):
     runner = models.ForeignKey(Participant, on_delete=models.CASCADE, related_name="race_runners")
     race = models.ForeignKey(Race, on_delete=models.CASCADE, related_name="race_runners")
-    total_time = models.DurationField(blank=True, null=True)
+    total_time = models.DurationField(blank=True, null=True, default=0)
     score = models.IntegerField(default=0,blank=True, null=True)
     is_finished = models.BooleanField(default=False)
     correct_checkpoints = models.JSONField(blank=True, null=True)
