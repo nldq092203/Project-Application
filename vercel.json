@@ -8,9 +8,12 @@
         }
       },
       {
-        "src": "/sport/wsgi.py",
+        "src": "sport/wsgi.py",
         "use": "@vercel/python",
-        "config": { "maxLambdaSize": "15mb" }
+        "config": { 
+            "maxLambdaSize": "15mb",
+            "runtime": "Python3.10" 
+        }
       }
     ],
     "routes": [

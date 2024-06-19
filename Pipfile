@@ -16,6 +16,7 @@ redis = "*"
 python-dotenv = "*"
 django-filter = "*"
 pytz = "*"
+whitenoise = "*"
 
 [dev-packages]
 
