@@ -7,4 +7,3 @@ python-dotenv
 django-filter
 pytz
 django-cors-headers
-sqlite3
