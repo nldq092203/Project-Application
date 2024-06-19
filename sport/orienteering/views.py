@@ -395,6 +395,10 @@ class StartRaceView(APIView):
         if not race:
             return Response({'message': 'Race not found or not published'}, status=status.HTTP_404_NOT_FOUND)
 
+        # Check if it's time to start the race
+        if timezone.now() < race.event.start:
+            return Response({'message': 'It is not yet time to start the race'}, status=status.HTTP_400_BAD_REQUEST)
+
         group_event = race.event.group_runner.members.all()
         if request.user not in group_event:
             return Response({'message': 'You have not joined this event'}, status=status.HTTP_400_BAD_REQUEST)
