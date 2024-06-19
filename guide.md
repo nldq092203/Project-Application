@@ -145,7 +145,7 @@ pk is event_id
 #### Event
 - My events: GET - {{baseURL}}/api/my-event-runner/
 - All published events: GET - {{baseURL}}/api/all-event-runner/
-- Published events detail: GET - {{baseURL}}/api/all-event-runner/<int:pk>/
+- Published events detail: GET - {{baseURL}}/api/event-detail-runner/<int:pk>/
 
 #### Race
 - Retrieve race of published event: GET - {{baseURL}}/api/race-runner/<int:pk>/
