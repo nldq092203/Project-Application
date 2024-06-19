@@ -2,12 +2,8 @@ django
 djangorestframework
 djangorestframework-xml
 djoser
-mysqlclient
 pillow
-celery
-redis
 python-dotenv
 django-filter
 pytz
-whitenoise
 django-cors-headers
