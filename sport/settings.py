@@ -190,5 +190,5 @@ LOGGING = {
 # CELERY_TASK_TIME_LIMIT = 30 * 60
 
 if os.environ.get('VERCEL'):
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_build')
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
