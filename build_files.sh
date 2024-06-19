@@ -1,9 +1,10 @@
+python3.9 -m venv venv
 
-python3 -m venv env
-./env/Scripts/activate 
-./env/Scripts/python.exe -m pip install --upgrade pip
+# activate the virtual environment
+source venv/bin/activate
 
+# install all deps in the venv
 pip install -r requirements.txt
 
-# Collect static files
-python3 manage.py collectstatic --no-input
+# collect static files using the Python interpreter from venv
+python manage.py collectstatic --noinput
