@@ -17,6 +17,7 @@ from django.utils import timezone
 import datetime
 from django.utils.duration import duration_string
 import logging
+from math import radians, cos, sin, asin, sqrt
 
 logger = logging.getLogger(__name__)
 
@@ -459,13 +460,30 @@ class RecordCheckPointView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+
+    def haversine(lon1, lat1, lon2, lat2):
+        """
+        Calculate the great circle distance in kilometers between two points 
+        on the earth (specified in decimal degrees)
+        """
+        # convert decimal degrees to radians 
+        lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+
+        # haversine formula 
+        dlon = lon2 - lon1 
+        dlat = lat2 - lat1 
+        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+        c = 2 * asin(sqrt(a)) 
+        r = 6371 # Radius of earth in kilometers. Use 3956 for miles. Determines return value units.
+        return c * r
+
     def verify_checkpoint_record(self, checkpoint_record):
         race_runner = checkpoint_record.race_runner
         race = race_runner.race
         for checkpoint in race.checkpoints.all():
             if checkpoint_record.number == checkpoint.number:
-                # Assuming checkpoint.location and checkpoint_record.location are Point objects
-                distance = checkpoint.location.distance(checkpoint_record.location)
+                # Assuming checkpoint.longitude, checkpoint.latitude, checkpoint_record.longitude and checkpoint_record.latitude are float values
+                distance = self.haversine(checkpoint.longitude, checkpoint.latitude, checkpoint_record.longitude, checkpoint_record.latitude)
                 if distance <= 5: 
                     checkpoint_record.is_correct = True
                     checkpoint_record.save()

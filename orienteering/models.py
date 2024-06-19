@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.gis.db import models as gis_models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 
 class Participant(AbstractUser):
@@ -24,7 +23,8 @@ class GroupRunner(models.Model):
     
 class Location(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    start_point = gis_models.PointField()
+    longitude = models.FloatField()
+    latitude = models.FloatField()
 
 class Event(models.Model):
     name = models.CharField(max_length=100)
@@ -55,13 +55,15 @@ class Race(models.Model):
 
 class CheckPoint(models.Model):
     number = models.IntegerField()
-    location = gis_models.PointField() 
+    longitude = models.FloatField()
+    latitude = models.FloatField()
     race = models.ForeignKey(Race, on_delete=models.CASCADE, related_name='checkpoints')
     score = models.IntegerField(default=0, blank=True, null=True)
 
 class CheckPointRecord(models.Model):
     number = models.IntegerField()
-    location = gis_models.PointField(null=True)
+    longitude = models.FloatField()
+    latitude = models.FloatField()
     is_correct = models.BooleanField(blank=True, null=True)
     race_runner = models.ForeignKey('RaceRunner', on_delete=models.CASCADE, related_name='checkpoint_records')
 

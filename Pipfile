@@ -17,6 +17,7 @@ python-dotenv = "*"
 django-filter = "*"
 pytz = "*"
 whitenoise = "*"
+django-cors-headers = "*"
 
 [dev-packages]
 

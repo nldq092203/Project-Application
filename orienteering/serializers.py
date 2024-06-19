@@ -3,7 +3,6 @@ from . import models
 from django.utils import timezone
 from rest_framework.validators import UniqueTogetherValidator
 import pytz
-from django.contrib.gis.geos import Point
 
 class ParticipantSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -52,60 +51,19 @@ class GroupRunnerSerializer(serializers.ModelSerializer):
 
 
 class LocationSerializer(serializers.ModelSerializer):
-    longitude = serializers.FloatField(write_only=True)
-    latitude = serializers.FloatField(write_only=True)
 
     class Meta:
         model = models.Location
         fields = ['id', 'name', 'longitude', 'latitude']
+    def validate_longitude(self, value):
+        if value < -180 or value > 180:
+            raise serializers.ValidationError("Longitude must be a value between -180 and 180.")
+        return value
 
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation['longitude'] = instance.start_point.x
-        representation['latitude'] = instance.start_point.y
-        return representation
-
-    def to_internal_value(self, data):
-        internal_value = super().to_internal_value(data)
-        longitude = data.get('longitude')
-        latitude = data.get('latitude')
-
-        if longitude is None or latitude is None:
-            raise serializers.ValidationError({
-                'longitude': 'This field is required.',
-                'latitude': 'This field is required.'
-            })
-
-        try:
-            longitude = float(longitude)
-            latitude = float(latitude)
-        except (TypeError, ValueError):
-            raise serializers.ValidationError({
-                'longitude': 'Longitude must be a valid float.',
-                'latitude': 'Latitude must be a valid float.'
-            })
-
-        if not (-180 <= longitude <= 180):
-            raise serializers.ValidationError({
-                'longitude': 'Longitude must be between -180 and 180.'
-            })
-        if not (-90 <= latitude <= 90):
-            raise serializers.ValidationError({
-                'latitude': 'Latitude must be between -90 and 90.'
-            })
-
-        internal_value['start_point'] = Point(longitude, latitude)
-        return internal_value
-
-    def create(self, validated_data):
-        validated_data['start_point'] = Point(validated_data.pop('longitude'), validated_data.pop('latitude'))
-        return models.Location.objects.create(**validated_data)
-
-    def update(self, instance, validated_data):
-        if 'longitude' in validated_data and 'latitude' in validated_data:
-            instance.start_point = Point(validated_data.pop('longitude'), validated_data.pop('latitude'))
-        return super().update(instance, validated_data)
-    
+    def validate_latitude(self, value):
+        if value < -90 or value > 90:
+            raise serializers.ValidationError("Latitude must be a value between -90 and 90.")
+        return value
 class RaceTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.RaceType
@@ -114,8 +72,6 @@ class RaceTypeSerializer(serializers.ModelSerializer):
 
 class CheckPointSerializer(serializers.ModelSerializer):
     race_id = serializers.IntegerField(write_only=True)
-    longitude = serializers.FloatField(write_only=True)
-    latitude = serializers.FloatField(write_only=True)
 
     class Meta:
         model = models.CheckPoint
@@ -126,53 +82,17 @@ class CheckPointSerializer(serializers.ModelSerializer):
                 fields=['number', 'race_id']
             )
         ]
+        
+    def validate_longitude(self, value):
+        if value < -180 or value > 180:
+            raise serializers.ValidationError("Longitude must be a value between -180 and 180.")
+        return value
 
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation['longitude'] = instance.location.x
-        representation['latitude'] = instance.location.y
-        return representation
+    def validate_latitude(self, value):
+        if value < -90 or value > 90:
+            raise serializers.ValidationError("Latitude must be a value between -90 and 90.")
+        return value
 
-    def to_internal_value(self, data):
-        internal_value = super().to_internal_value(data)
-        longitude = data.get('longitude')
-        latitude = data.get('latitude')
-
-        if longitude is None or latitude is None:
-            raise serializers.ValidationError({
-                'longitude': 'This field is required.',
-                'latitude': 'This field is required.'
-            })
-
-        try:
-            longitude = float(longitude)
-            latitude = float(latitude)
-        except (TypeError, ValueError):
-            raise serializers.ValidationError({
-                'longitude': 'Longitude must be a valid float.',
-                'latitude': 'Latitude must be a valid float.'
-            })
-
-        if not (-180 <= longitude <= 180):
-            raise serializers.ValidationError({
-                'longitude': 'Longitude must be between -180 and 180.'
-            })
-        if not (-90 <= latitude <= 90):
-            raise serializers.ValidationError({
-                'latitude': 'Latitude must be between -90 and 90.'
-            })
-
-        internal_value['location'] = Point(longitude, latitude)
-        return internal_value
-
-    def create(self, validated_data):
-        validated_data['location'] = Point(validated_data.pop('longitude'), validated_data.pop('latitude'))
-        return models.CheckPoint.objects.create(**validated_data)
-
-    def update(self, instance, validated_data):
-        if 'longitude' in validated_data and 'latitude' in validated_data:
-            instance.location = Point(validated_data.pop('longitude'), validated_data.pop('latitude'))
-        return super().update(instance, validated_data)
 
 class RaceSerializer(serializers.ModelSerializer):
     # event = serializers.HyperlinkedRelatedField(
@@ -255,59 +175,19 @@ class EventSerializer(serializers.ModelSerializer):
 
 class CheckPointRecordSerializer(serializers.ModelSerializer):
     race_runner_id = serializers.IntegerField(write_only=True)
-    longitude = serializers.FloatField(write_only=True)
-    latitude = serializers.FloatField(write_only=True)
 
     class Meta:
         model = models.CheckPointRecord
         fields = ['id', 'number', 'longitude', 'latitude', 'is_correct', 'race_runner_id']
+    def validate_longitude(self, value):
+        if value < -180 or value > 180:
+            raise serializers.ValidationError("Longitude must be a value between -180 and 180.")
+        return value
 
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation['longitude'] = instance.location.x
-        representation['latitude'] = instance.location.y
-        return representation
-
-    def to_internal_value(self, data):
-        internal_value = super().to_internal_value(data)
-        longitude = data.get('longitude')
-        latitude = data.get('latitude')
-
-        if longitude is None or latitude is None:
-            raise serializers.ValidationError({
-                'longitude': 'This field is required.',
-                'latitude': 'This field is required.'
-            })
-
-        try:
-            longitude = float(longitude)
-            latitude = float(latitude)
-        except (TypeError, ValueError):
-            raise serializers.ValidationError({
-                'longitude': 'Longitude must be a valid float.',
-                'latitude': 'Latitude must be a valid float.'
-            })
-
-        if not (-180 <= longitude <= 180):
-            raise serializers.ValidationError({
-                'longitude': 'Longitude must be between -180 and 180.'
-            })
-        if not (-90 <= latitude <= 90):
-            raise serializers.ValidationError({
-                'latitude': 'Latitude must be between -90 and 90.'
-            })
-
-        internal_value['location'] = Point(longitude, latitude)
-        return internal_value
-
-    def create(self, validated_data):
-        validated_data['location'] = Point(validated_data.pop('longitude'), validated_data.pop('latitude'))
-        return models.CheckPointRecord.objects.create(**validated_data)
-
-    def update(self, instance, validated_data):
-        if 'longitude' in validated_data and 'latitude' in validated_data:
-            instance.location = Point(validated_data.pop('longitude'), validated_data.pop('latitude'))
-        return super().update(instance, validated_data)
+    def validate_latitude(self, value):
+        if value < -90 or value > 90:
+            raise serializers.ValidationError("Latitude must be a value between -90 and 90.")
+        return value
 
 class RaceRunnerSerializer(serializers.ModelSerializer):
     # runner = serializers.HyperlinkedRelatedField(

@@ -26,7 +26,7 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-#&z!_!')
 DEBUG = os.getenv('DEBUG', 'True')
 ALLOWED_HOSTS = ['localhost', '10.0.2.2','127.0.0.1', '.vercel.app']
 # Application definition
@@ -83,7 +83,7 @@ WSGI_APPLICATION = 'sport.wsgi.app'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.mysql',
+        'ENGINE': 'django.db.backends.mysql',
         'NAME': os.getenv('DB_NAME', 'Sport'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'USER': os.getenv('DB_USER', 'sportmanager'),

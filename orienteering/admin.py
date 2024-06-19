@@ -11,10 +11,10 @@ class ParticipantAdmin(admin.ModelAdmin):
     ]
 
 class LocationAdmin(admin.ModelAdmin):
-    list_display = ['name', 'start_point']
+    list_display = ['name', 'longitude', 'latitude']
     search_fields = ['name']
     fieldsets = [
-        (None, {'fields': ['name', 'start_point']}),
+        (None, {'fields': ['name', 'longitude', 'latitude']}),
     ]
 class GroupRunnerAdmin(admin.ModelAdmin):
     list_display = ['name', 'department']
@@ -39,7 +39,7 @@ class RaceAdmin(admin.ModelAdmin):
     ]
 
 class CheckPointAdmin(admin.ModelAdmin):
-    list_display = ['number', 'location', 'race']
+    list_display = ['number', 'longitude', 'latitude', 'race']
     search_fields = ['number', 'race']
     list_filter = ['race']
 
@@ -53,7 +53,7 @@ class RaceTypeAdmin(admin.ModelAdmin):
     search_fields = ['name']
 
 class CheckPointRecord(admin.ModelAdmin):
-    list_display = ['number', 'location']
+    list_display = ['number', 'longitude', 'latitude', 'is_correct']
 
 admin.site.register(models.Participant, ParticipantAdmin)
 admin.site.register(models.GroupRunner, GroupRunnerAdmin)
