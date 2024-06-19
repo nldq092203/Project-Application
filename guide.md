@@ -115,7 +115,16 @@ CREATE_SESSION_ON_LOGIN
 - Create a checkpoint - POST - {{baseURL}}/api/checkpoints/ 
 -> body: number + longitude + latitude + race_id + score
 
+#### Get all Score for Event
+- GET - {{baseUYL}} - score-total/<int:pk>/
+pk is event_id
+-> Response List contains 'runner_id'+'runner_username'+'total_time'+'total_score' 
+        "runner_id": 6,
+        "runner_username": "quynh",
+        "total_time": "00:30:40",
+        "total_score": 41
 
+        
 ### App Logics for Runner
 #### Location
 - {{baseURL}}/api/locations/<int:pk>/
