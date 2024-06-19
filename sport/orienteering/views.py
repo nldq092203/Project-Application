@@ -64,7 +64,8 @@ class CustomTokenCreateView(TokenCreateView):
             'message': 'Login successfully',
             'data': {
                 'accessToken': token.data['auth_token'],
-                'role': role
+                'role': role,
+                'user_id': user.id
             }
         })
 

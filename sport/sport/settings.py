@@ -28,7 +28,7 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'True')
-ALLOWED_HOSTS = ['localhost', '10.0.0.2.2']
+ALLOWED_HOSTS = ['localhost', '10.0.0.2.2','127.0.0.1']
 # Application definition
 
 INSTALLED_APPS = [
