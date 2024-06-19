@@ -70,7 +70,7 @@ CREATE_SESSION_ON_LOGIN
 #### Participant
 - {{baseURL}}/api/participants/<int:pk>/
     + GET-retrieve: Retrieve the detail information of specific participant
-    
+
 
 #### Event
 - {{baseURL}}/api/events-coach/
@@ -170,4 +170,12 @@ pk is event_id
 race_runner_id : when start a race (above) all info about the RaceRunner created will be returned in the response so can save the race_runner_id as a variable to use during the RaceRunner taking place
 
 -> response: data updated
+
+#### MyScore 
+- GET - {{baseURL}}/api/my-score/<int:pk>/ (pk is event_id)
+-> Response
+{
+    "total_time": "1840.0",
+    "total_score": 41
+}
 
