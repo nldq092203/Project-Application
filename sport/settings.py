@@ -162,7 +162,7 @@ DJOSER ={
     },
 }
 
-GDAL_LIBRARY_PATH = os.getenv('GDAL_LIBRARY_PATH', r'C:\OSGeo4W\bin\gdal309')
+# GDAL_LIBRARY_PATH = os.getenv('GDAL_LIBRARY_PATH', r'C:\OSGeo4W\bin\gdal309')
 DJANGO_COACH_SECRET_CODE = 'iamcoach'
 CORS_ALLOW_ALL_ORIGINS = True
 
