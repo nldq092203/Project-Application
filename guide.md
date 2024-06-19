@@ -69,7 +69,8 @@ CREATE_SESSION_ON_LOGIN
 
 #### Participant
 - {{baseURL}}/api/participants/<int:pk>/
-    + GET-retrieve: Retrieve the detail information of specific 
+    + GET-retrieve: Retrieve the detail information of specific participant
+    
 
 #### Event
 - {{baseURL}}/api/events-coach/
@@ -124,7 +125,7 @@ pk is event_id
         "total_time": "00:30:40",
         "total_score": 41
 
-        
+
 ### App Logics for Runner
 #### Location
 - {{baseURL}}/api/locations/<int:pk>/
