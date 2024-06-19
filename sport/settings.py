@@ -28,7 +28,7 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-#&z!_!')
 DEBUG = os.getenv('DEBUG', 'True')
-ALLOWED_HOSTS = ['localhost', '10.0.2.2','127.0.0.1', '.vercel.app']
+ALLOWED_HOSTS = ['localhost', '10.0.2.2', '127.0.0.1', '.vercel.app']
 # Application definition
 
 INSTALLED_APPS = [
