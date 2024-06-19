@@ -210,6 +210,8 @@ class GroupRunnerCoachView(generics.ListCreateAPIView):
     filterset_class = filters.GroupRunnerFilter
 
     def get_permissions(self):
+        if self.request.method == 'GET':
+            return [IsAuthenticated()]
         return [IsCoachOrAdminUser()]
     
     def get_queryset(self):
@@ -310,7 +312,35 @@ class CheckPointListView(generics.ListCreateAPIView):
 
     def get_permissions(self):
         return [IsCoachOrAdminUser()]
+
+class ScoreTotalView(APIView):
+    def get_permissions(self):
+        return [IsCoachOrAdminUser()]
     
+    def get(self, request, *args, **kwargs):
+        event_id = self.kwargs['pk']
+        if not event_id:
+            return Response({'message': 'Event ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        event = Event.objects.get(id=event_id)
+        response_data = []
+
+        for runner in event.group_runner.members.all():
+            race_runners = RaceRunner.objects.filter(runner=runner, race__event=event)
+            total_time = sum((race_runner.total_time for race_runner in race_runners if race_runner.total_time is not None), timedelta())
+            total_score = sum(race_runner.score for race_runner in race_runners if race_runner.score is not None)            
+
+            response_data.append({
+                'runner_id': runner.id,
+                'runner_username': runner.username,
+                'total_time': duration_string(total_time),  # Convert total time to datetime
+                'total_score': total_score
+            })
+
+        return Response(response_data, status=status.HTTP_200_OK)
+             
+
+
 
 #############################################################################
 
@@ -567,27 +597,26 @@ class EndRaceRunnerView(APIView):
                 return 0
             return (total_time.total_seconds() - time_limit.total_seconds()) * self.NegativePointPerSecond
 
-class ScoreTotalView(APIView):
-    def get(self, request, *args, **kwargs):
-        event_id = self.kwargs['pk']
-        if not event_id:
-            return Response({'message': 'Event ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+# class MyScoreView(APIView):
+#     def get_permissions(self):
+#         return [IsRunner()]
+    
+#     def get(self, request, *args, **kwargs):
+#         event_id = self.kwargs['pk']
+#         if not event_id:
+#             return Response({'message': 'Event ID is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        event = Event.objects.get(id=event_id)
-        response_data = []
+#         event = Event.objects.get(id=event_id)
+#         race_runners = RaceRunner.objects.filter(runner=runner, race__event=event)
+#             total_time = sum((race_runner.total_time for race_runner in race_runners if race_runner.total_time is not None), timedelta())
+#             total_score = sum(race_runner.score for race_runner in race_runners if race_runner.score is not None)            
 
-        for runner in event.group_runner.members.all():
-            race_runners = RaceRunner.objects.filter(runner=runner, race__event=event)
-            total_time = sum((race_runner.total_time for race_runner in race_runners if race_runner.total_time is not None), timedelta())
-            total_score = sum(race_runner.score for race_runner in race_runners if race_runner.score is not None)            
+#             response_data.append({
+#                 'runner_id': runner.id,
+#                 'runner_username': runner.username,
+#                 'total_time': duration_string(total_time),  # Convert total time to datetime
+#                 'total_score': total_score
+#             })
 
-            response_data.append({
-                'runner_id': runner.id,
-                'runner_username': runner.username,
-                'total_time': duration_string(total_time),  # Convert total time to datetime
-                'total_score': total_score
-            })
-
-        return Response(response_data, status=status.HTTP_200_OK)
+#         return Response(response_data, status=status.HTTP_200_OK)
              
-
